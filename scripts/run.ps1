@@ -16,61 +16,114 @@ New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
 
 function Write-Status($msg) { Write-Host "[SARATHI] $msg" -ForegroundColor Cyan }
 
-Write-Status "Starting SARATHI stack..."
-
-# 1. Start DB + Redis
-Write-Status "Starting PostGIS + Redis..."
-Push-Location $Root
-docker compose --profile backend up -d postgres redis
-Pop-Location
-
-# 2. Wait for Postgres
-Write-Status "Waiting for PostGIS..."
-$ready = $false
-for ($i = 1; $i -le 30; $i++) {
-    try {
-        $r = docker exec sarathi-postgis pg_isready -U sarathi_admin 2>&1
-        if ($LASTEXITCODE -eq 0) { $ready = $true; break }
-    } catch {}
-    Start-Sleep -Seconds 1
-}
-if (-not $ready) { throw "PostGIS did not become ready in time" }
-
-# 3. Run migrations
-Write-Status "Running migrations..."
-$migrations = Get-ChildItem (Join-Path $Root "database\migrations\*.sql")
-foreach ($m in $migrations) {
-    docker exec -i sarathi-postgis psql -U sarathi_admin -d sarathi_db -f /docker-entrypoint-initdb.d/$(Split-Path $m -Leaf) 2>&1 | Out-Null
+# Check Docker
+$dockerAvailable = $false
+try {
+    $null = docker --version
+    $dockerAvailable = $true
+} catch {
+    Write-Host "[SARATHI] Docker not found in PATH." -ForegroundColor Yellow
 }
 
-# 4. Core Engine
+if ($dockerAvailable) {
+    Write-Status "Starting PostGIS + Redis via Docker..."
+    Push-Location $Root
+    docker compose --profile backend up -d postgres redis
+    Pop-Location
+
+    Write-Status "Waiting for PostGIS..."
+    $ready = $false
+    for ($i = 1; $i -le 30; $i++) {
+        try {
+            $r = docker exec sarathi-postgis pg_isready -U sarathi_admin 2>&1
+            if ($LASTEXITCODE -eq 0) { $ready = $true; break }
+        } catch {}
+        Start-Sleep -Seconds 1
+    }
+    if (-not $ready) { throw "PostGIS did not become ready in time" }
+
+    Write-Status "Running migrations..."
+    $migrations = Get-ChildItem (Join-Path $Root "database\migrations\*.sql") | Sort-Object Name
+    foreach ($m in $migrations) {
+        $fname = Split-Path $m -Leaf
+        $psi = New-Object System.Diagnostics.ProcessStartInfo
+        $psi.FileName = "docker"
+        $psi.Arguments = @(
+            "exec",
+            "-i",
+            "sarathi-postgis",
+            "psql",
+            "-U",
+            "sarathi_admin",
+            "-d",
+            "sarathi_db",
+            "-v",
+            "ON_ERROR_STOP=1",
+            "-f",
+            "/docker-entrypoint-initdb.d/$fname"
+        ) -join ' '
+        $psi.RedirectStandardOutput = $true
+        $psi.RedirectStandardError = $true
+        $psi.UseShellExecute = $false
+        $process = [System.Diagnostics.Process]::Start($psi)
+        $stdout = $process.StandardOutput.ReadToEnd()
+        $stderr = $process.StandardError.ReadToEnd()
+        $process.WaitForExit()
+        if ($process.ExitCode -ne 0) {
+            $msg = @($stdout, $stderr) | Where-Object { $_ } | Out-String
+            throw "Migration failed for $fname`n$msg"
+        }
+    }
+} else {
+    Write-Host "[SARATHI] Skipping Docker. Make sure Postgres+PostGIS and Redis are running locally." -ForegroundColor Yellow
+    Write-Host "         Or install Docker Desktop: https://www.docker.com/products/docker-desktop/" -ForegroundColor Yellow
+}
+
+# Core Engine
 Write-Status "Starting core-engine..."
 $engineLog = Join-Path $LogDir "core-engine.log"
-Start-Process -FilePath "python" -ArgumentList "-m","uvicorn","app.main:app","--reload","--port","8000","--app-dir",(Join-Path $Root "core-engine") -NoNewWindow -RedirectStandardOutput $engineLog -RedirectStandardError $engineLog
-
-# 5. API Gateway
-Write-Status "Starting api-gateway..."
-$gwLog = Join-Path $LogDir "api-gateway.log"
-Push-Location (Join-Path $Root "api-gateway")
-if (Test-Path node_modules) {
-    Start-Process -FilePath "node" -ArgumentList "src/server.js" -NoNewWindow -RedirectStandardOutput $gwLog -RedirectStandardError $gwLog
-} else {
-    Start-Process -FilePath "npm" -ArgumentList "run","dev" -NoNewWindow -RedirectStandardOutput $gwLog -RedirectStandardError $gwLog
+$engineOut = "$engineLog.out"
+$engineErr = "$engineLog.err"
+Push-Location (Join-Path $Root "core-engine")
+if (-not (Test-Path .venv)) {
+    Write-Status "Creating Python virtual environment..."
+    python -m venv .venv
+    .\.venv\Scripts\pip install -r requirements.txt
 }
+Start-Process -FilePath ".\.venv\Scripts\python.exe" -ArgumentList "-m","uvicorn","app.main:app","--reload","--port","8000" -NoNewWindow -RedirectStandardOutput $engineOut -RedirectStandardError $engineErr
 Pop-Location
 
-# 6. Frontends
+# API Gateway
+Write-Status "Starting api-gateway..."
+$gwLog = Join-Path $LogDir "api-gateway.log"
+$gwOut = "$gwLog.out"
+$gwErr = "$gwLog.err"
+Push-Location (Join-Path $Root "api-gateway")
+if (-not (Test-Path node_modules)) {
+    Write-Status "Installing gateway dependencies..."
+    npm install
+}
+Start-Process -FilePath "node" -ArgumentList "src/server.js" -NoNewWindow -RedirectStandardOutput $gwOut -RedirectStandardError $gwErr
+Pop-Location
+
+# Frontends
 if (-not $NoFrontend) {
     Write-Status "Starting tourist-app..."
     $clientLog = Join-Path $LogDir "tourist-app.log"
+    $clientOut = "$clientLog.out"
+    $clientErr = "$clientLog.err"
     Push-Location (Join-Path $Root "apps\tourist-app")
-    Start-Process -FilePath "npm" -ArgumentList "run","dev" -NoNewWindow -RedirectStandardOutput $clientLog -RedirectStandardError $clientLog
+    if (-not (Test-Path node_modules)) { npm install }
+    Start-Process -FilePath "npm.cmd" -ArgumentList "run","dev" -NoNewWindow -RedirectStandardOutput $clientOut -RedirectStandardError $clientErr
     Pop-Location
 
     Write-Status "Starting b2b-console..."
     $b2bLog = Join-Path $LogDir "b2b-console.log"
+    $b2bOut = "$b2bLog.out"
+    $b2bErr = "$b2bLog.err"
     Push-Location (Join-Path $Root "apps\b2b-console")
-    Start-Process -FilePath "npm" -ArgumentList "run","dev" -NoNewWindow -RedirectStandardOutput $b2bLog -RedirectStandardError $b2bLog
+    if (-not (Test-Path node_modules)) { npm install }
+    Start-Process -FilePath "npm.cmd" -ArgumentList "run","dev" -NoNewWindow -RedirectStandardOutput $b2bOut -RedirectStandardError $b2bErr
     Pop-Location
 }
 

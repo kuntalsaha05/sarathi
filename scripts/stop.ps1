@@ -5,18 +5,27 @@ Stops the SARATHI stack.
 #>
 
 $ErrorActionPreference = 'SilentlyContinue'
+$Root = Split-Path -Parent $PSScriptRoot
+$LogDir = Join-Path $Root "logs"
 
 Write-Host "[SARATHI] Stopping services..."
 
-# Kill Node processes from our apps
-Get-Process -Name "node" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -match "tourist-app|b2b-console|server.js" } | Stop-Process -Force
+$patterns = @("uvicorn", "node.*server.js", "npm.*run dev")
+$procs = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {
+    $cmd = $_.CommandLine
+    $cmd -match "uvicorn" -or $cmd -match "node.*server\.js" -or $cmd -match "npm.*run dev"
+}
+foreach ($p in $procs) { Stop-Process -Id $p.ProcessId -Force }
 
-# Kill Python uvicorn
-Get-Process -Name "python" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -match "uvicorn" } | Stop-Process -Force
+try {
+    Push-Location $Root
+    docker compose --profile backend down 2>&1 | Out-Null
+    Pop-Location
+} catch {}
 
-# Stop docker compose services
-Push-Location (Split-Path -Parent $PSScriptRoot)
-docker compose --profile backend down
-Pop-Location
+# Clean up logs if desired
+if (Test-Path $LogDir) {
+    Remove-Item "$LogDir\*.log" -Force -ErrorAction SilentlyContinue
+}
 
 Write-Host "[SARATHI] All services stopped."

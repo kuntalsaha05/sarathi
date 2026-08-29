@@ -1,6 +1,6 @@
 from fastapi import APIRouter, File, UploadFile
 from pydantic import BaseModel
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
 from app.nlp.indic_slot_extractor import extract_tourist_slots
 from app.nlp.bhashini_client import transcribe_indic_audio
 

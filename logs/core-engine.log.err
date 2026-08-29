@@ -1,0 +1,7 @@
+INFO:     Will watch for changes in these directories: ['C:\\Users\\sahak\\Documents\\SIH\\sarathi\\sarathi\\core-engine']
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [92404] using StatReload
+Importing plotly failed. Interactive plots will not work.
+INFO:     Started server process [88148]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
