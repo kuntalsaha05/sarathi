@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgis/postgis:15-3.3
+    environment:
+      POSTGRES_USER: sarathi
+      POSTGRES_PASSWORD: sarathi
+      POSTGRES_DB: sarathi
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./database/migrations:/docker-entrypoint-initdb.d
+      - db_data:/var/lib/postgresql/data
+
+  osrm:
+    image: osrm/osrm-backend:latest
+    command: osrm-routed --algorithm mld /data/india-latest.osrm
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./docker/osrm_data:/data
+    profiles:
+      - routing
+
+  core-engine:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.optimizer
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://sarathi:sarathi@db:5432/sarathi
+      - OSRM_URL=http://osrm:5000
+    depends_on:
+      - db
+    profiles:
+      - backend
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - CORE_ENGINE_URL=http://core-engine:8000
+      - DATABASE_URL=postgresql://sarathi:sarathi@db:5432/sarathi
+    depends_on:
+      - core-engine
+    profiles:
+      - backend
+
+  tourist-app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.client
+    ports:
+      - "8080:80"
+    profiles:
+      - frontend
+
+  b2b-console:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.b2b
+    ports:
+      - "8081:80"
+    profiles:
+      - frontend
+
+volumes:
+  db_data:
