@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: postgis/postgis:15-3.3
@@ -45,7 +43,7 @@ services:
       - "3000:3000"
     environment:
       - CORE_ENGINE_URL=http://core-engine:8000
-      - DATABASE_URL=postgresql://sarathi:sarathi@db:5432/sarathi
+      - DATABASE_URL=postgresql://sarathi:[REDACTED]@db:5432/sarathi
     depends_on:
       - core-engine
     profiles:
