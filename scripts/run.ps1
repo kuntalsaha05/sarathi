@@ -81,49 +81,53 @@ if ($dockerAvailable) {
 
 # Core Engine
 Write-Status "Starting core-engine..."
+$engineDir = Join-Path $Root "core-engine"
 $engineLog = Join-Path $LogDir "core-engine.log"
 $engineOut = "$engineLog.out"
 $engineErr = "$engineLog.err"
-Push-Location (Join-Path $Root "core-engine")
+Push-Location $engineDir
 if (-not (Test-Path .venv)) {
     Write-Status "Creating Python virtual environment..."
     python -m venv .venv
     .\.venv\Scripts\pip install -r requirements.txt
 }
-Start-Process -FilePath ".\.venv\Scripts\python.exe" -ArgumentList "-m","uvicorn","app.main:app","--reload","--port","8000" -NoNewWindow -RedirectStandardOutput $engineOut -RedirectStandardError $engineErr
+Start-Process -FilePath (Join-Path $engineDir ".venv\Scripts\python.exe") -ArgumentList "-m","uvicorn","app.main:app","--reload","--port","8000" -WorkingDirectory $engineDir -NoNewWindow -RedirectStandardOutput $engineOut -RedirectStandardError $engineErr
 Pop-Location
 
 # API Gateway
 Write-Status "Starting api-gateway..."
+$gwDir = Join-Path $Root "api-gateway"
 $gwLog = Join-Path $LogDir "api-gateway.log"
 $gwOut = "$gwLog.out"
 $gwErr = "$gwLog.err"
-Push-Location (Join-Path $Root "api-gateway")
+Push-Location $gwDir
 if (-not (Test-Path node_modules)) {
     Write-Status "Installing gateway dependencies..."
     npm install
 }
-Start-Process -FilePath "node" -ArgumentList "src/server.js" -NoNewWindow -RedirectStandardOutput $gwOut -RedirectStandardError $gwErr
+Start-Process -FilePath "node" -ArgumentList "src/server.js" -WorkingDirectory $gwDir -NoNewWindow -RedirectStandardOutput $gwOut -RedirectStandardError $gwErr
 Pop-Location
 
 # Frontends
 if (-not $NoFrontend) {
     Write-Status "Starting tourist-app..."
+    $clientDir = Join-Path $Root "apps\tourist-app"
     $clientLog = Join-Path $LogDir "tourist-app.log"
     $clientOut = "$clientLog.out"
     $clientErr = "$clientLog.err"
-    Push-Location (Join-Path $Root "apps\tourist-app")
+    Push-Location $clientDir
     if (-not (Test-Path node_modules)) { npm install }
-    Start-Process -FilePath "npm.cmd" -ArgumentList "run","dev" -NoNewWindow -RedirectStandardOutput $clientOut -RedirectStandardError $clientErr
+    Start-Process -FilePath "npm.cmd" -ArgumentList "run","dev" -WorkingDirectory $clientDir -NoNewWindow -RedirectStandardOutput $clientOut -RedirectStandardError $clientErr
     Pop-Location
 
     Write-Status "Starting b2b-console..."
+    $b2bDir = Join-Path $Root "apps\b2b-console"
     $b2bLog = Join-Path $LogDir "b2b-console.log"
     $b2bOut = "$b2bLog.out"
     $b2bErr = "$b2bLog.err"
-    Push-Location (Join-Path $Root "apps\b2b-console")
+    Push-Location $b2bDir
     if (-not (Test-Path node_modules)) { npm install }
-    Start-Process -FilePath "npm.cmd" -ArgumentList "run","dev" -NoNewWindow -RedirectStandardOutput $b2bOut -RedirectStandardError $b2bErr
+    Start-Process -FilePath "npm.cmd" -ArgumentList "run","dev" -WorkingDirectory $b2bDir -NoNewWindow -RedirectStandardOutput $b2bOut -RedirectStandardError $b2bErr
     Pop-Location
 }
 

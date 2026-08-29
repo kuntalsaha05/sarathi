@@ -1,31 +1,34 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-Stops the SARATHI stack.
+Stops all SARATHI services.
 #>
 
 $ErrorActionPreference = 'SilentlyContinue'
-$Root = Split-Path -Parent $PSScriptRoot
-$LogDir = Join-Path $Root "logs"
 
-Write-Host "[SARATHI] Stopping services..."
+Write-Host "[SARATHI] Stopping all local services..." -ForegroundColor Cyan
 
-$patterns = @("uvicorn", "node.*server.js", "npm.*run dev")
+# Stop processes listening on SARATHI ports (5000, 8000, 5173, 5174)
+$ports = @(5000, 8000, 5173, 5174)
+foreach ($port in $ports) {
+    try {
+        $connections = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
+        foreach ($conn in $connections) {
+            $pidToKill = $conn.OwningProcess
+            if ($pidToKill -and $pidToKill -ne 0 -and $pidToKill -ne $PID) {
+                Stop-Process -Id $pidToKill -Force -ErrorAction SilentlyContinue
+            }
+        }
+    } catch {}
+}
+
+# Stop uvicorn and vite processes
 $procs = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {
     $cmd = $_.CommandLine
-    $cmd -match "uvicorn" -or $cmd -match "node.*server\.js" -or $cmd -match "npm.*run dev"
+    $cmd -match "uvicorn" -or $cmd -match "api-gateway" -or $cmd -match "tourist-app" -or $cmd -match "b2b-console"
 }
-foreach ($p in $procs) { Stop-Process -Id $p.ProcessId -Force }
-
-try {
-    Push-Location $Root
-    docker compose --profile backend down 2>&1 | Out-Null
-    Pop-Location
-} catch {}
-
-# Clean up logs if desired
-if (Test-Path $LogDir) {
-    Remove-Item "$LogDir\*.log" -Force -ErrorAction SilentlyContinue
+foreach ($p in $procs) {
+    Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue
 }
 
-Write-Host "[SARATHI] All services stopped."
+Write-Host "[SARATHI] All SARATHI services stopped successfully." -ForegroundColor Green

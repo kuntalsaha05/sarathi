@@ -3,7 +3,7 @@ from ortools.constraint_solver import pywrapcp
 import numpy as np
 
 
-def solve_sarathi_itinerary(time_matrix, crowd_penalties, time_windows=None, service_times=None):
+def solve_sarathi_itinerary(time_matrix, crowd_penalties=None, time_windows=None, service_times=None):
     """
     TD-VRPTW Solver for Project SARATHI.
     Computes optimal multi-day/multi-stop tourist itinerary with crowd mitigation.
@@ -15,6 +15,14 @@ def solve_sarathi_itinerary(time_matrix, crowd_penalties, time_windows=None, ser
         service_times: list of dwell times in minutes per node
     """
     num_nodes = len(time_matrix)
+    if num_nodes == 0:
+        return {"status": "FAILED", "route": [], "total_time_min": 0, "alerts": ["Empty node list"]}
+
+    if crowd_penalties is None:
+        crowd_penalties = [0] * num_nodes
+    elif len(crowd_penalties) < num_nodes:
+        crowd_penalties = list(crowd_penalties) + [0] * (num_nodes - len(crowd_penalties))
+
     if time_windows is None:
         time_windows = [(0, 720) for _ in range(num_nodes)]
     if service_times is None:
@@ -28,7 +36,7 @@ def solve_sarathi_itinerary(time_matrix, crowd_penalties, time_windows=None, ser
         to_node = manager.IndexToNode(to_index)
         travel_time = int(time_matrix[from_node][to_node])
         dwell_time = int(service_times[from_node])
-        penalty = int(crowd_penalties[to_node])
+        penalty = int(crowd_penalties[to_node]) if to_node < len(crowd_penalties) else 0
         return travel_time + dwell_time + penalty
 
     transit_callback_index = routing.RegisterTransitCallback(time_callback)
@@ -46,7 +54,7 @@ def solve_sarathi_itinerary(time_matrix, crowd_penalties, time_windows=None, ser
 
     for location_idx, time_window in enumerate(time_windows):
         index = manager.NodeToIndex(location_idx)
-        time_dimension.CumulVar(index).SetRange(time_window[0], time_window[1])
+        time_dimension.CumulVar(index).SetRange(int(time_window[0]), int(time_window[1]))
 
     for node in range(1, num_nodes):
         routing.AddDisjunction([manager.NodeToIndex(node)], 5000)
@@ -82,4 +90,4 @@ def solve_sarathi_itinerary(time_matrix, crowd_penalties, time_windows=None, ser
         index = solution.Value(routing.NextVar(index))
         total_time += time_matrix[manager.IndexToNode(previous_index)][manager.IndexToNode(index)]
 
-    return {"status": "SUCCESS", "route": route, "total_time_min": total_time, "alerts": []}
+    return {"status": "SUCCESS", "route": route, "total_time_min": round(total_time, 1), "alerts": []}

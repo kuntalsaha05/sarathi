@@ -1,34 +1,30 @@
 from typing import List, Dict, Any
-import httpx
+from app.db.local_store import get_poi_by_identifier
 
 ALPHA = 15.0
 BETA = 45.0
 
 
-async def compute_dynamic_costs(waypoints: List[str], start_time: str) -> List[float]:
+async def compute_dynamic_costs(waypoints: List[Any], start_time: str = "") -> List[float]:
     """
     Compute penalty-adjusted costs for each waypoint.
     Cost_edge(i,j,t) = BaseTravelTime(i,j) + alpha * (Pax_current(j,t) / Pax_max(j))^2 + beta * WeatherHazardPenalty(j,t)
     """
     penalties = []
     for wp in waypoints:
-        crowd_ratio = await _get_crowd_ratio(wp)
+        crowd_ratio = _get_crowd_ratio(wp)
         weather_penalty = _get_weather_hazard(wp)
         penalty = ALPHA * (crowd_ratio ** 2) + BETA * weather_penalty
         penalties.append(penalty)
     return penalties
 
 
-async def _get_crowd_ratio(poi_id: str) -> float:
-    try:
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(f"http://localhost:8000/api/v1/crowd-level/{poi_id}")
-            resp.raise_for_status()
-            data = resp.json()
-            return min(data.get("predicted_crowd", 0) / max(data.get("pax_max", 1), 1), 1.0)
-    except Exception:
-        return 0.3
+def _get_crowd_ratio(node: Any) -> float:
+    poi = get_poi_by_identifier(node)
+    if poi:
+        return float(poi.get("congestionRatio", 0.35))
+    return 0.35
 
 
-def _get_weather_hazard(poi_id: str) -> float:
+def _get_weather_hazard(node: Any) -> float:
     return 0.0
