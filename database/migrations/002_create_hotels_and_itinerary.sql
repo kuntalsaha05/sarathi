@@ -1,3 +1,16 @@
+-- Hotels Table
+CREATE TABLE IF NOT EXISTS hotels (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    geom GEOMETRY(Point, 4326) NOT NULL,
+    total_rooms INT NOT NULL,
+    base_price_per_night NUMERIC(8,2) NOT NULL,
+    category VARCHAR(50)
+);
+
+CREATE INDEX IF NOT EXISTS idx_hotels_geom ON hotels USING GIST (geom);
+
+-- Itinerary Logs
 CREATE TABLE IF NOT EXISTS itinerary_logs (
     id SERIAL PRIMARY KEY,
     user_id VARCHAR(255) NOT NULL,

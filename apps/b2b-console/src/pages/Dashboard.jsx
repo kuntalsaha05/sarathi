@@ -1,5 +1,5 @@
 import DemandForecastChart from '../components/DemandForecastChart';
-import InventoryManager from '../components/InventoryManager';
+import DynamicPricingCard from '../components/DynamicPricingCard';
 import { getForecast, getInventory } from '../services/api';
 
 export default function Dashboard() {
@@ -16,7 +16,7 @@ export default function Dashboard() {
       <h2 className="text-3xl font-bold">B2B Dashboard</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <DemandForecastChart data={forecast} />
-        <InventoryManager rooms={inventory} onUpdate={() => {}} />
+        <DynamicPricingCard rooms={inventory} onUpdate={() => {}} />
       </div>
     </div>
   );

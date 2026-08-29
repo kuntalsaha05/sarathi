@@ -1,37 +1,46 @@
+version: '3.8'
+
 services:
-  db:
-    image: postgis/postgis:15-3.3
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: sarathi-postgis
+    restart: always
     environment:
-      POSTGRES_USER: sarathi
-      POSTGRES_PASSWORD: sarathi
-      POSTGRES_DB: sarathi
+      POSTGRES_USER: sarathi_admin
+      POSTGRES_PASSWORD: sarathi_secure_password
+      POSTGRES_DB: sarathi_db
     ports:
       - "5432:5432"
     volumes:
+      - pgdata:/var/lib/postgresql/data
       - ./database/migrations:/docker-entrypoint-initdb.d
-      - db_data:/var/lib/postgresql/data
 
-  osrm:
-    image: osrm/osrm-backend:latest
-    command: osrm-routed --algorithm mld /data/india-latest.osrm
+  redis:
+    image: redis:7-alpine
+    container_name: sarathi-redis
+    restart: always
     ports:
-      - "5000:5000"
+      - "6379:6379"
     volumes:
-      - ./docker/osrm_data:/data
-    profiles:
-      - routing
+      - redisdata:/data
 
   core-engine:
     build:
       context: .
       dockerfile: docker/Dockerfile.optimizer
+    container_name: sarathi-engine
+    environment:
+      - DATABASE_URL=postgresql://sarathi_admin:sarathi_secure_password@postgres:5432/sarathi_db
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - OSRM_URL=http://osrm:5000
     ports:
       - "8000:8000"
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://sarathi:sarathi@db:5432/sarathi
-      - OSRM_URL=http://osrm:5000
     depends_on:
-      - db
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     profiles:
       - backend
 
@@ -39,13 +48,20 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.gateway
-    ports:
-      - "3000:3000"
+    container_name: sarathi-gateway
     environment:
-      - CORE_ENGINE_URL=http://core-engine:8000
-      - DATABASE_URL=postgresql://sarathi:[REDACTED]@db:5432/sarathi
+      - PORT=5000
+      - ENGINE_URL=http://core-engine:8000
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DATABASE_URL=postgresql://sarathi_admin:sarathi_secure_password@postgres:5432/sarathi_db
+    ports:
+      - "5000:5000"
     depends_on:
-      - core-engine
+      core-engine:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     profiles:
       - backend
 
@@ -68,4 +84,5 @@ services:
       - frontend
 
 volumes:
-  db_data:
+  pgdata:
+  redisdata:

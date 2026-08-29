@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from typing import List, Optional
-from app.forecasting.demand_model import forecast_demand
-from app.forecasting.crowd_predictor import predict_crowd
+from app.ml.demand_forecaster import forecast_demand
+from app.ml.crowd_predictor import predict_crowd
 
 router = APIRouter()
 

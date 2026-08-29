@@ -1,15 +1,15 @@
 import { io } from 'socket.io-client';
 
-const socket = io('http://localhost:3000');
+const socket = io('http://localhost:5000');
 
 export default function DisruptionAlert({ tripId }) {
   const [alert, setAlert] = React.useState(null);
 
   React.useEffect(() => {
     if (!tripId) return;
-    socket.emit('subscribe_trip', tripId);
-    socket.on('AUTO_REROUTE_EVENT', (data) => setAlert(data));
-    return () => socket.off('AUTO_REROUTE_EVENT');
+    socket.emit('subscribe_itinerary', tripId);
+    socket.on('reroute_recommendation', (data) => setAlert(data));
+    return () => socket.off('reroute_recommendation');
   }, [tripId]);
 
   if (!alert) return null;

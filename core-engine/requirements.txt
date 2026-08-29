@@ -3,7 +3,7 @@ uvicorn[standard]==0.24.0.post1
 sqlalchemy==2.0.23
 asyncpg==0.29.0
 python-dotenv==1.0.0
-ortools==9.7.2996
+ortools==9.7.3126
 prophet==1.1.5
 lightgbm==4.1.0
 spacy==3.7.2
@@ -19,3 +19,4 @@ pytest==7.4.3
 httpx==0.25.2
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+redis==5.0.1

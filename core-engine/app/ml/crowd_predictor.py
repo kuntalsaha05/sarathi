@@ -6,6 +6,7 @@ def predict_crowd(poi_id: str, timestamp: Optional[str] = None) -> Dict:
         "poi_id": poi_id,
         "timestamp": timestamp,
         "predicted_crowd": 120,
+        "pax_max": 1000,
         "level": "moderate",
         "confidence": 0.82,
     }

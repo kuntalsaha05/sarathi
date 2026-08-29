@@ -3,32 +3,27 @@ set -e
 
 echo "=== SARATHI Bootstrap Script ==="
 
-# Install Python dependencies
-echo "[1/4] Installing core-engine dependencies..."
-cd core-engine
-pip install -r requirements.txt
-cd ..
+echo "[1/4] Starting Docker services..."
+docker compose --profile backend up -d postgres redis
 
-# Install gateway dependencies
-echo "[2/4] Installing api-gateway dependencies..."
-cd api-gateway
-npm ci
-cd ..
+echo "[2/4] Waiting for PostGIS to be ready..."
+sleep 5
 
-# Install frontend dependencies
-echo "[3/4] Installing frontend dependencies..."
+echo "[3/4] Running migrations..."
+docker exec -i $(docker ps -q --filter ancestor=postgis/postgis) \
+  psql -U sarathi_admin -d sarathi_db -f /docker-entrypoint-initdb.d/001_init_postgis.sql || true
+
+echo "[4/4] Installing dependencies..."
+cd core-engine && pip install -r requirements.txt && cd ..
+cd api-gateway && npm ci && cd ..
 cd apps/tourist-app && npm ci && cd ../..
 cd apps/b2b-console && npm ci && cd ../..
-
-# Start database and services
-echo "[4/4] Starting Docker services..."
-docker compose --profile backend up -d db
 
 echo ""
 echo "=== Bootstrap complete ==="
 echo "Next steps:"
-echo "  1. Run migrations: docker exec -i \$(docker ps -q --filter ancestor=postgis/postgis) psql -U sarathi -d sarathi -f /docker-entrypoint-initdb.d/001_init_postgis.sql"
-echo "  2. Start core-engine: cd core-engine && uvicorn app.main:app --reload"
-echo "  3. Start gateway: cd api-gateway && npm run dev"
-echo "  4. Start tourist-app: cd apps/tourist-app && npm run dev"
-echo "  5. Start b2b-console: cd apps/b2b-console && npm run dev"
+echo "  1. Start core-engine: cd core-engine && uvicorn app.main:app --reload"
+echo "  2. Start gateway: cd api-gateway && npm run dev"
+echo "  3. Start tourist-app: cd apps/tourist-app && npm run dev"
+echo "  4. Start b2b-console: cd apps/b2b-console && npm run dev"
+echo "  5. Run demo: python scripts/mock_disruption_trigger.py"

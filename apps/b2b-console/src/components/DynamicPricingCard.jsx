@@ -1,4 +1,4 @@
-export default function InventoryManager({ rooms, onUpdate }) {
+export default function DynamicPricingCard({ rooms, onUpdate }) {
   return (
     <div className="bg-white p-4 rounded shadow">
       <h3 className="font-bold mb-2">Dynamic Pricing & Allocation</h3>

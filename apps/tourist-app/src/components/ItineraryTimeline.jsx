@@ -1,7 +1,7 @@
-export default function ItineraryCard({ stops, onReorder }) {
+export default function ItineraryTimeline({ stops, onReorder }) {
   return (
     <div className="border rounded p-4 shadow">
-      <h3 className="font-bold mb-2">Itinerary</h3>
+      <h3 className="font-bold mb-2">Itinerary Timeline</h3>
       <ol className="list-decimal pl-5 space-y-1">
         {stops.map((s, i) => (
           <li key={i}>{s}</li>

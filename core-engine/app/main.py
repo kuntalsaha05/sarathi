@@ -4,7 +4,7 @@ from app.api.v1 import routes, forecast, indic_voice
 
 app = FastAPI(
     title="SARATHI Core Engine",
-    description="Optimization, forecasting, and NLP microservice",
+    description="TD-VRPTW optimization, forecasting, and Indic NLP microservice",
     version="1.0.0",
 )
 

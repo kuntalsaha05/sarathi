@@ -1,18 +1,14 @@
-from pydantic_settings import BaseSettings
-from typing import Optional
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
 
-class Settings(BaseSettings):
-    DATABASE_URL: str = "postgresql+asyncpg://sarathi:sarathi@localhost:5432/sarathi"
-    OSRM_URL: str = "http://localhost:5000"
-    MAPBOX_TOKEN: Optional[str] = None
-    BASHINI_API_KEY: Optional[str] = None
-    SECRET_KEY: str = "change-me-in-production"
-    ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
-
-    class Config:
-        env_file = ".env"
-
-
-settings = Settings()
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://sarathi_admin:sarathi_secure_password@localhost:5432/sarathi_db")
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+OSRM_URL = os.getenv("OSRM_URL", "http://localhost:5000")
+MAPBOX_TOKEN = os.getenv("MAPBOX_TOKEN")
+BASHINI_API_KEY = os.getenv("BASHINI_API_KEY")
+SECRET_KEY = os.getenv("SECRET_KEY", "change-me-in-production")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60

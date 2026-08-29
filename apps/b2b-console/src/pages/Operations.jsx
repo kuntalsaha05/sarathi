@@ -1,4 +1,4 @@
-import InventoryManager from '../components/InventoryManager';
+import DynamicPricingCard from '../components/DynamicPricingCard';
 
 export default function Operations() {
   const rooms = [
@@ -8,7 +8,7 @@ export default function Operations() {
   return (
     <div className="p-6">
       <h2 className="text-3xl font-bold mb-4">Operations</h2>
-      <InventoryManager rooms={rooms} onUpdate={() => {}} />
+      <DynamicPricingCard rooms={rooms} onUpdate={() => {}} />
     </div>
   );
 }
