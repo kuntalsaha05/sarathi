@@ -1,0 +1,57 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: sarathi_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sarathi
+      POSTGRES_PASSWORD: sarathi_dev_pw
+      POSTGRES_DB: sarathi_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - sarathi_pg_data:/var/lib/postgresql/data
+      - ./db:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sarathi -d sarathi_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: sarathi_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - sarathi_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sarathi_backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+
+volumes:
+  sarathi_pg_data:
+  sarathi_redis_data:
