@@ -1,5 +1,13 @@
 import React from 'react';
-import { TrendingUp, Users, DollarSign, Activity, AlertCircle, ArrowUpRight } from 'lucide-react';
+import {
+  TrendingUp,
+  Users,
+  DollarSign,
+  Activity,
+  ArrowUpRight,
+  Sparkles,
+  Building2
+} from 'lucide-react';
 
 export default function KPICards({ kpis = {}, property = {} }) {
   const {
@@ -20,78 +28,111 @@ export default function KPICards({ kpis = {}, property = {} }) {
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       
       {/* 1. Property Occupancy */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-lg relative overflow-hidden group hover:border-slate-700 transition">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Current Occupancy</span>
-          <div className="p-2 rounded-xl bg-jodhpur-500/10 text-jodhpur-400 border border-jodhpur-500/20">
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs hover:border-slate-300 transition-all hover:shadow-sm space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Live Occupancy</span>
+          <div className="p-2 rounded-xl bg-jodhpur-50 text-jodhpur-700 border border-jodhpur-200/60">
             <Users className="w-4 h-4" />
           </div>
         </div>
-        <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-black text-white">{occupancy_rate_pct}%</span>
-          <span className="text-xs font-semibold text-slate-400">({rooms_booked}/{total_rooms} rooms)</span>
+        <div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-black text-slate-950">{occupancy_rate_pct}%</span>
+            <span className="text-xs font-bold text-slate-400">({rooms_booked}/{total_rooms} rooms)</span>
+          </div>
+          {/* Progress bar */}
+          <div className="w-full bg-slate-100 rounded-full h-1.5 mt-2 overflow-hidden">
+            <div
+              className="bg-jodhpur-600 h-1.5 rounded-full transition-all duration-500"
+              style={{ width: `${occupancy_rate_pct}%` }}
+            ></div>
+          </div>
         </div>
-        <div className="mt-3 flex items-center gap-1.5 text-xs text-emerald-400 font-semibold">
+        <div className="flex items-center gap-1.5 text-xs text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-lg w-fit">
           <ArrowUpRight className="w-3.5 h-3.5" />
           <span>+12% vs last week pace</span>
         </div>
       </div>
 
       {/* 2. ADR & Dynamic Yield Recommendation */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-lg relative overflow-hidden group hover:border-slate-700 transition">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Dynamic ADR (AI)</span>
-          <div className="p-2 rounded-xl bg-marigold-500/10 text-marigold-400 border border-marigold-500/20">
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs hover:border-slate-300 transition-all hover:shadow-sm space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Dynamic ADR (AI)</span>
+          <div className="p-2 rounded-xl bg-amber-50 text-amber-800 border border-amber-200/60">
             <DollarSign className="w-4 h-4" />
           </div>
         </div>
-        <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-black text-marigold-400">₹{suggested_adr_inr.toLocaleString()}</span>
-          <span className="text-xs text-slate-500 line-through">₹{current_adr_inr.toLocaleString()}</span>
+        <div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-black text-amber-700">₹{suggested_adr_inr.toLocaleString()}</span>
+            <span className="text-xs text-slate-400 line-through font-semibold">₹{current_adr_inr.toLocaleString()}</span>
+          </div>
+          {/* Progress bar */}
+          <div className="w-full bg-slate-100 rounded-full h-1.5 mt-2 overflow-hidden">
+            <div
+              className="bg-amber-500 h-1.5 rounded-full transition-all duration-500"
+              style={{ width: `${Math.min(100, (suggested_adr_inr / 10000) * 100)}%` }}
+            ></div>
+          </div>
         </div>
-        <div className="mt-3 flex items-center gap-1.5 text-xs text-marigold-300 font-semibold">
-          <span className="px-1.5 py-0.2 rounded bg-marigold-500/20 text-marigold-300 font-bold">+{adrDiffPct}%</span>
-          <span>+₹{potential_rev_gain_inr.toLocaleString()} potential gain</span>
+        <div className="flex items-center gap-1.5 text-xs text-amber-900 font-bold bg-amber-50 px-2 py-0.5 rounded-lg w-fit border border-amber-200/60">
+          <span className="bg-amber-200/80 px-1 py-0.2 rounded font-black text-[10px]">+{adrDiffPct}%</span>
+          <span>+₹{potential_rev_gain_inr.toLocaleString()} gain</span>
         </div>
       </div>
 
       {/* 3. RevPAR */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-lg relative overflow-hidden group hover:border-slate-700 transition">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">RevPAR</span>
-          <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs hover:border-slate-300 transition-all hover:shadow-sm space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Revenue Per Room</span>
+          <div className="p-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/60">
             <TrendingUp className="w-4 h-4" />
           </div>
         </div>
-        <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-black text-white">₹{revpar_inr.toLocaleString()}</span>
-          <span className="text-xs font-semibold text-slate-400">per avail room</span>
+        <div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-black text-slate-950">₹{revpar_inr.toLocaleString()}</span>
+            <span className="text-xs font-bold text-slate-400">RevPAR</span>
+          </div>
+          <div className="w-full bg-slate-100 rounded-full h-1.5 mt-2 overflow-hidden">
+            <div
+              className="bg-emerald-500 h-1.5 rounded-full transition-all duration-500"
+              style={{ width: '82%' }}
+            ></div>
+          </div>
         </div>
-        <div className="mt-3 flex items-center gap-1.5 text-xs text-emerald-400 font-semibold">
-          <ArrowUpRight className="w-3.5 h-3.5" />
-          <span>Optimal RevPAR ceiling</span>
+        <div className="flex items-center gap-1.5 text-xs text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded-lg w-fit">
+          <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+          <span>Optimal revenue threshold</span>
         </div>
       </div>
 
       {/* 4. Destination Tourism Influx Index */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-lg relative overflow-hidden group hover:border-slate-700 transition">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Jaipur Influx Index</span>
-          <div className="p-2 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs hover:border-slate-300 transition-all hover:shadow-sm space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Destination Influx Index</span>
+          <div className="p-2 rounded-xl bg-rose-50 text-rose-700 border border-rose-200/60">
             <Activity className="w-4 h-4" />
           </div>
         </div>
-        <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-black text-rose-400">{destination_influx_index}</span>
-          <span className="text-xs font-semibold text-slate-400">/ 10 (Peak Demand)</span>
+        <div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-black text-rose-600">{destination_influx_index}</span>
+            <span className="text-xs font-bold text-slate-400">/ 10 (Peak Demand)</span>
+          </div>
+          <div className="w-full bg-slate-100 rounded-full h-1.5 mt-2 overflow-hidden">
+            <div
+              className="bg-rose-500 h-1.5 rounded-full transition-all duration-500"
+              style={{ width: `${destination_influx_index * 10}%` }}
+            ></div>
+          </div>
         </div>
-        <div className="mt-3 flex items-center gap-1.5 text-xs text-rose-300 font-semibold">
-          <AlertCircle className="w-3.5 h-3.5 text-rose-400" />
-          <span>{active_alerts_count} active crowd/weather warnings</span>
+        <div className="flex items-center gap-1.5 text-xs text-rose-800 font-bold bg-rose-50 px-2 py-0.5 rounded-lg w-fit border border-rose-200/60">
+          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+          <span>{active_alerts_count} active corridor alerts</span>
         </div>
       </div>
 
     </div>
   );
 }
-
